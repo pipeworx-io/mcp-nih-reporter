@@ -1,13 +1,18 @@
-# mcp-nih-reporter
+# @pipeworx/nih-reporter
 
-NIH RePORTER MCP — every NIH-funded research project (free, no auth)
+NIH RePORTER MCP — every NIH-funded grant, no auth.
 
-Part of [Pipeworx](https://pipeworx.io) — an MCP gateway connecting AI agents to 673+ live data sources.
+Part of [Pipeworx](https://pipeworx.io) — an MCP gateway connecting AI agents to 1394+ live data sources.
 
 ## Tools
 
-| Tool | Description |
-|------|-------------|
+- `search_grants(query?, pi_name?, organization?, fiscal_year?, state?, ic?, limit?, offset?)` — filter projects.
+- `get_project(appl_id)` — full record by application ID.
+- `search_publications(pmids?, appl_ids?, core_project_nums?, limit?, offset?)` — grant-linked publications.
+
+## Data source
+
+`https://api.reporter.nih.gov/v2/` — public POST-JSON API, no key required.
 
 ## Quick Start
 
@@ -23,7 +28,7 @@ Add to your MCP client (Claude Desktop, Cursor, Windsurf, etc.):
 }
 ```
 
-Or connect to the full Pipeworx gateway for access to all 673+ data sources:
+Or connect to the full Pipeworx gateway for access to all 1394+ data sources:
 
 ```json
 {
@@ -47,7 +52,7 @@ The gateway picks the right tool and fills the arguments automatically.
 
 ## More
 
-- [All tools and guides](https://github.com/pipeworx-io/examples)
+- [Docs and guides](https://pipeworx.io/docs)
 - [pipeworx.io](https://pipeworx.io)
 
 ## License
