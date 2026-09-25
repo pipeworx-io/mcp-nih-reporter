@@ -3,7 +3,7 @@
   "name": "io.github.pipeworx-io/nih-reporter",
   "title": "Nih Reporter",
   "description": "NIH RePORTER MCP — every NIH-funded research project (free, no auth)",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "websiteUrl": "https://pipeworx.io/packs/nih-reporter",
   "repository": {
     "url": "https://github.com/pipeworx-io/mcp-nih-reporter",
