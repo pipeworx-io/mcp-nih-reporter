@@ -1,6 +1,6 @@
 {
   "name": "@pipeworx/mcp-nih-reporter",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "NIH RePORTER MCP — every NIH-funded research project (free, no auth)",
   "type": "module",
   "main": "src/index.ts",
@@ -26,7 +26,7 @@
     "@cloudflare/workers-types": "^4.20260405.1"
   },
   "pipeworx": {
-    "sourceHash": "v1-adb0ce21197a3d91a21b6ab8c584508f433694ccecad536a0b14042af704f560",
-    "sourceCommit": "adb69d997f82a62e8e22b594488c7d04a227db35"
+    "sourceHash": "v1-66c1577ea23e107662a0c970b88270ae4e138b6f4c41cb893fbb29b949ac2286",
+    "sourceCommit": "97740c6ee04c8acbfe7dddcacfde9e88ff2b9ca0"
   }
 }

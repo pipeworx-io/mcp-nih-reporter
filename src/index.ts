@@ -452,7 +452,42 @@ async function fetchWithTimeout(
         ),
       );
     }
-    throw err;
+    // Fleet #2382. Everything that isn't a timeout/abort here is a genuine
+    // NETWORK-LEVEL failure — DNS resolution, connection refused, TLS handshake,
+    // Cloudflare's own "Network connection lost." — meaning `fetch()` itself
+    // threw and no HTTP response of any kind was ever received. Until this fix
+    // that raw exception was rethrown VERBATIM: a bare `TypeError: fetch failed`
+    // (or the Workers-runtime equivalent) names no upstream, carries no class
+    // token, and reads exactly like a defect in OUR code — because it says
+    // nothing about the call at all. It landed in `error`, the tier that means
+    // "Pipeworx has a defect", for every one of the (at the time of writing)
+    // ~470 packs that call this helper directly with no wrapper of their own.
+    //
+    // `dexscreener` hit this independently (fleet #1579) and fixed it with a
+    // bespoke per-pack try/catch around `fetchWithTimeout`. That fix is correct
+    // but only covers one pack; every other caller of this shared helper still
+    // leaked the raw exception. Moving the same fix HERE — the one place that
+    // already carries the timeout case — covers every pack that uses
+    // `fetchWithTimeout` without a wrapper, for free, and without widening
+    // `classifyToolError`'s regex list: the fix is giving the message a proper
+    // `upstream_down:` token at the point the two facts (no response was ever
+    // received, and which host we were trying to reach) are actually in hand,
+    // not teaching the classifier to guess from prose after the fact.
+    //
+    // Safe on the same grounds as the timeout branch above: no argument a
+    // caller passes can make `fetch()` itself throw a connection-level error,
+    // so this is always an availability failure, never a caller mistake. Same
+    // `markInternalOrigin` treatment — an origin we run that never answered is
+    // still ours, not a third party's outage.
+    const raw = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      markInternalOrigin(
+        `upstream_down: could not reach ${name} at all (${raw.slice(0, 160)}). ` +
+          `No request reached ${name}, so this says NOTHING about whether the arguments you passed ` +
+          'are valid — do not re-check them on the strength of this error. Retry shortly.',
+        url,
+      ),
+    );
   }
 }
 
@@ -671,13 +706,21 @@ const tools: McpToolExport['tools'] = [
   {
     name: 'search_grants',
     description:
-      'Search NIH-funded research projects. Filter by free-text query (matches title/abstract/terms), PI name, organization, fiscal year, US state, or NIH institute code (NCI, NHLBI, NIAID, etc.). Returns project number, PI, institution, fiscal year, award amount, and abstract preview.',
+      'Search NIH-funded research projects. Filter by free-text query (topic/subject matter — matches title/abstract/terms, NOT the awardee), PI name, organization (the funded company/university/institution — use THIS, not query, for "what grants has <company/university> received"), fiscal year, US state, or NIH institute code (NCI, NHLBI, NIAID, etc.). Returns project number, PI, institution, fiscal year, award amount, and abstract preview.',
     inputSchema: {
       type: 'object',
       properties: {
-        query: { type: 'string', description: 'Free-text search across title, abstract, terms' },
+        query: {
+          type: 'string',
+          description:
+            'Free-text search over project title/abstract/terms — an AND match on the SUBJECT MATTER words you pass (e.g. "cancer immunotherapy"), not a lookup by funding recipient. Do NOT put a company, institution, or organization name here: the name rarely appears verbatim in grant text, so it instead AND-matches on the name\'s individual common words and can return thousands of unrelated grants. For "what NIH grants has <company/university/institution> received", use `organization` instead.',
+        },
         pi_name: { type: 'string', description: 'PI last name (or any name part)' },
-        organization: { type: 'string', description: 'Institution name (e.g., "Stanford University")' },
+        organization: {
+          type: 'string',
+          description:
+            'The funded organization — the company, university, hospital, or institution that RECEIVED the award (e.g., "Stanford University"). This is the correct filter whenever the question names a specific organization/company/institution as the funding recipient — use it INSTEAD of `query`, which searches grant CONTENT, not the awardee.',
+        },
         fiscal_year: { type: 'number', description: 'Fiscal year (e.g., 2024)' },
         state: { type: 'string', description: 'US state code (e.g., "CA")' },
         ic: { type: 'string', description: 'NIH Institute/Center code (e.g., "NCI", "NHLBI", "NIMH")' },
